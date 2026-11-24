@@ -1,11 +1,14 @@
 import { zipSync } from 'fflate'
 import { inspectImage } from '../evidence/imageFormat'
-import type { Evidence, ExecutionStatus, Project, ProjectBundle, Scenario, Step } from '../model'
+import type { DocumentationLink, Evidence, ExecutionStatus, Project, ProjectBundle, Scenario, Step } from '../model'
+import { numberedSteps } from '../numbered-steps'
+import { assignCaptureStep } from '../scenario-evidence'
 import { BACKUP_EVIDENCE_LIMIT, BACKUP_FILE_LIMIT, BACKUP_LIMIT, readBackupZip } from './backupZip'
 import { download } from './download'
 
 const FORMAT = 'taf-project'
-const VERSION = 1
+const VERSION = 2
+const LEGACY_VERSION = 1
 const JSON_LIMIT = BACKUP_FILE_LIMIT
 const MANIFEST_LIMIT = 1024 * 1024
 const MAX_SCENARIOS = 5_000
@@ -88,6 +91,14 @@ function parseStep(value: unknown): Step {
   }
 }
 
+function parseDocumentationLink(value: unknown): DocumentationLink {
+  const row = record(value)
+  const sourceScenarioId = identifier(row.sourceScenarioId)
+  return row.sourceStepId === undefined ? { sourceScenarioId } : {
+    sourceScenarioId, sourceStepId: identifier(row.sourceStepId),
+  }
+}
+
 function parseScenario(value: unknown): Scenario {
   const row = record(value)
   if (typeof row.evidenceRequired !== 'boolean') return invalid()
@@ -102,6 +113,9 @@ function parseScenario(value: unknown): Scenario {
     executionStatus: status(row.executionStatus),
     metadata: Object.fromEntries(metadata.map(([key, entry]) => [string(key, 256), string(entry)])),
     steps: array(row.steps, 5_000).map(parseStep),
+    ...(row.documentationLinks === undefined ? {} : {
+      documentationLinks: array(row.documentationLinks, JSON_LIMIT).map(parseDocumentationLink),
+    }),
   }
 }
 
@@ -138,6 +152,18 @@ function parseMetadata(value: unknown): BackupMetadata {
     stepsByScenario.set(scenario.id, steps)
   }
 
+  for (const scenario of scenarios) {
+    const linksBySource = new Map<string, Set<string | undefined>>()
+    for (const { sourceScenarioId, sourceStepId } of scenario.documentationLinks ?? []) {
+      const sourceSteps = stepsByScenario.get(sourceScenarioId)
+      if (!sourceSteps || sourceScenarioId === scenario.id || (sourceStepId && !sourceSteps.has(sourceStepId))) return invalid()
+      const previous = linksBySource.get(sourceScenarioId) ?? new Set<string | undefined>()
+      if (previous.has(undefined) || previous.has(sourceStepId) || (sourceStepId === undefined && previous.size)) return invalid()
+      previous.add(sourceStepId)
+      linksBySource.set(sourceScenarioId, previous)
+    }
+  }
+
   const evidence = array(metadata.evidence, BACKUP_EVIDENCE_LIMIT).map(parseEvidence)
   const evidenceIds = new Set<string>()
   for (const item of evidence) {
@@ -146,6 +172,23 @@ function parseMetadata(value: unknown): BackupMetadata {
     evidenceIds.add(item.id)
   }
   return { project, scenarios, evidence }
+}
+
+function restoreLegacySteps(scenarios: Scenario[], evidence: Evidence[]): void {
+  const assignments = new Map<string, { steps: Step[]; occupied: Set<string> }>()
+  for (const scenario of scenarios) {
+    if (scenario.steps.length) continue
+    const steps = numberedSteps(scenario.detailedSteps)
+    if (!steps.length) continue
+    scenario.steps = steps
+    assignments.set(scenario.id, { steps, occupied: new Set() })
+  }
+  if (!assignments.size) return
+  for (const capture of evidence.toSorted((left, right) => left.order - right.order)) {
+    const assignment = assignments.get(capture.scenarioId)
+    if (!assignment || capture.stepId !== undefined) continue
+    Object.assign(capture, assignCaptureStep(capture, assignment.steps, assignment.occupied))
+  }
 }
 
 async function sha256(bytes: Uint8Array): Promise<string> {
@@ -222,7 +265,7 @@ export async function readBackup(file: File): Promise<ProjectBundle> {
   if (file.size > BACKUP_LIMIT) zipTooLarge()
   const files = readBackupZip(new Uint8Array(await file.arrayBuffer()))
   const manifest = record(json(blobBytes(files, 'manifest.json'), MANIFEST_LIMIT))
-  if (manifest.format !== FORMAT || manifest.version !== VERSION) {
+  if (manifest.format !== FORMAT || (manifest.version !== VERSION && manifest.version !== LEGACY_VERSION)) {
     throw new Error('El formato o la versión de este respaldo no es compatible con TAF.')
   }
   const checksums = record(manifest.files)
@@ -242,5 +285,6 @@ export async function readBackup(file: File): Promise<ProjectBundle> {
     const thumbnail = packImage(blobBytes(files, thumbnailPath), thumbnailPath, `evidence/${index + 1}-thumbnail`)
     return { ...item, image, thumbnail }
   })
+  if (manifest.version === LEGACY_VERSION) restoreLegacySteps(scenarios, evidence)
   return { project, scenarios, evidence }
 }

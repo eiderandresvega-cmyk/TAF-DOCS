@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { ArrowLeft, Camera, ChartNoAxesColumnIncreasing, CheckCircle2, Download, FileDown, FileText, LayoutGrid, List, Plus, Search, Settings2, Trash2 } from 'lucide-react'
-import { emptyScenario, isDocumented, progressFor, statuses, type ProjectBundle, type ProjectDetails } from './model'
+import { emptyScenario, isDocumented, progressFor, sharedDocumentationFor, statuses, type ProjectBundle, type ProjectDetails } from './model'
 import { addScenario, deleteProject, getBundle, storageMessage, updateProject } from './storage'
 import { DetailsFields, Modal, StatusBadge } from './ui'
 
@@ -98,10 +98,13 @@ export function Dashboard({ bundle, goHome, openScenario }: { bundle: ProjectBun
       {filtered.length ? <ul className={`scenario-list ${view}`}>
         {filtered.map((scenario) => {
           const attachments = evidenceByScenario.get(scenario.id) ?? []
+          const shared = sharedDocumentationFor(scenario, scenarios, evidence)
+          const captures = [...attachments, ...shared.flatMap((entry) => entry.evidence)]
+          const captureCount = new Set(captures.map((item) => item.id)).size
           return <li key={scenario.id}><button className="scenario-card surface" onClick={() => openScenario(scenario.id)}>
             <div className="scenario-head"><span className="scenario-id">{scenario.sourceId}</span><StatusBadge status={scenario.executionStatus} /></div>
             <span className="scenario-main"><strong>{scenario.title}</strong>{scenario.component && <span>{scenario.component}</span>}</span>
-            <div className="scenario-foot"><span>{scenario.priority ? `Prioridad ${scenario.priority}` : 'Sin prioridad'}</span><span><Camera size={15} /> {attachments.length}</span>{isDocumented(scenario, attachments) && <span className="documented"><CheckCircle2 size={15} /> Documentado</span>}</div>
+            <div className="scenario-foot"><span>{scenario.priority ? `Prioridad ${scenario.priority}` : 'Sin prioridad'}</span><span><Camera size={15} /> {captureCount}</span>{isDocumented(scenario, captures, shared.map((entry) => entry.source)) && <span className="documented"><CheckCircle2 size={15} /> Documentado</span>}</div>
           </button></li>
         })}
       </ul> : <div className="empty surface"><FileText size={27} /><strong>{scenarios.length ? 'No hay coincidencias' : 'Todavía no hay escenarios'}</strong><p>{scenarios.length ? 'Cambia la búsqueda o los filtros.' : 'Agrega un escenario para empezar a documentar tus pruebas.'}</p></div>}

@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
-import { isDocumented, progressFor } from '../model'
-import type { Evidence, ExecutionStatus, ProjectBundle, Scenario } from '../model'
+import { isDocumented, progressFor, sharedDocumentationFor, withExecutionDefaults } from '../model'
+import type { Evidence, ExecutionStatus, ProjectBundle, Scenario, SharedDocumentation, Step } from '../model'
+import { numberedStepActions } from '../numbered-steps'
 import { download } from './download'
 
 type Color = [number, number, number]
@@ -230,45 +231,81 @@ async function addEvidence(report: Report, evidence: Evidence, label: string): P
   report.field('Descripción de la captura', evidence.caption)
 }
 
-async function scenarioDetails(report: Report, scenario: Scenario, captures: Evidence[]): Promise<void> {
-  const primaryId = scenario.sourceId || `Escenario ${scenario.order + 1}`
+function scenarioIdentifier(scenario: Scenario): string {
+  return scenario.sourceId || `Escenario ${scenario.order + 1}`
+}
+
+function scenarioFields(report: Report, scenario: Scenario): void {
+  const { actualResult, comments } = withExecutionDefaults(scenario)
+  report.field('Componente', scenario.component)
+  report.field('Prioridad', scenario.priority)
+  report.field('Objetivo', scenario.objective)
+  const importedActions = numberedStepActions(scenario.detailedSteps)
+  const matchesStructuredSteps = importedActions.length === scenario.steps.length &&
+    importedActions.every((action, index) => action === scenario.steps[index].action)
+  if (importedActions.length === 0 || !matchesStructuredSteps) {
+    report.field('Pasos del escenario', scenario.detailedSteps)
+  }
+  report.field('Resultado esperado', scenario.expectedResult, true)
+  report.field('Resultado actual', actualResult, true)
+  report.field('Evidencia requerida', scenario.evidenceRequired ? 'Sí' : 'No')
+  report.field('Comentarios', comments)
+  report.field('Referencia de defecto', scenario.defectRef)
+}
+
+function stepDetails(report: Report, step: Step, number: number): void {
+  report.room(29)
+  report.rule(margin, report.y - 3, report.contentWidth)
+  report.y += 5
+  report.heading(`Paso ${number}`)
+  report.field('Acción', step.action, true)
+  report.field('Resultado esperado', step.expectedResult, true)
+  report.field('Resultado actual', step.actualResult, true)
+  report.field('Estado del paso', step.status)
+}
+
+async function scenarioCaptures(report: Report, scenario: Scenario, captures: Evidence[]): Promise<void> {
+  const stepNumbers = new Map(scenario.steps.map((step, index) => [step.id, index + 1]))
+  const ordered = captures.slice().sort((left, right) => left.order - right.order)
+  for (const [index, capture] of ordered.entries()) {
+    const step = capture.stepId && stepNumbers.get(capture.stepId)
+    await addEvidence(report, capture, step ? `Paso ${step}  /  Captura ${index + 1}` : `Captura de escenario ${index + 1}`)
+  }
+}
+
+async function sharedDetails(report: Report, documentation: SharedDocumentation[]): Promise<void> {
+  if (documentation.length === 0) return
+  if (report.orientation !== 'portrait') report.page(report.section, 'portrait')
+  report.room(37)
+  report.heading('Documentación compartida')
+  for (const { source, step, evidence } of documentation) {
+    if (report.orientation !== 'portrait') report.page(report.section, 'portrait')
+    report.field('Escenario de origen', `${scenarioIdentifier(source)} / ${source.title || 'Sin título'}`)
+    if (step) {
+      stepDetails(report, step, source.steps.findIndex((entry) => entry.id === step.id) + 1)
+    } else {
+      report.field('Estado del escenario de origen', source.executionStatus)
+      scenarioFields(report, source)
+      source.steps.forEach((entry, index) => stepDetails(report, entry, index + 1))
+    }
+    await scenarioCaptures(report, source, evidence)
+  }
+}
+
+async function scenarioDetails(report: Report, scenario: Scenario, captures: Evidence[], documentation: SharedDocumentation[], documented: boolean): Promise<void> {
+  const primaryId = scenarioIdentifier(scenario)
   report.page(`Escenario  /  ${primaryId}`, 'portrait')
   report.heading('Evidencia de ejecución de pruebas')
-  const documented = isDocumented(scenario, captures)
   report.rect(margin, report.y - 3.5, report.contentWidth, 11, light)
   report.text(scenario.executionStatus, margin + 3, report.y + 3.7, 11, statusColors[scenario.executionStatus], true)
   report.text(documented ? 'Documentado' : 'Documentación pendiente', margin + 40, report.y + 3.7, 10, documented ? teal : warning, true)
   report.y += 16
   report.field('Identificador', primaryId)
   report.field('Escenario', scenario.title, true)
-  report.field('Componente', scenario.component)
-  report.field('Prioridad', scenario.priority)
-  report.field('Objetivo', scenario.objective)
-  report.field('Pasos del escenario', scenario.detailedSteps)
-  report.field('Resultado esperado', scenario.expectedResult, true)
-  report.field('Resultado actual', scenario.actualResult, true)
-  report.field('Evidencia requerida', scenario.evidenceRequired ? 'Sí' : 'No')
-  report.field('Comentarios', scenario.comments)
-  report.field('Referencia de defecto', scenario.defectRef)
-
-  const stepNumbers = new Map<string, number>()
-  for (const [index, step] of scenario.steps.entries()) {
-    stepNumbers.set(step.id, index + 1)
-    report.room(29)
-    report.rule(margin, report.y - 3, report.contentWidth)
-    report.y += 5
-    report.heading(`Paso ${index + 1}`)
-    report.field('Acción', step.action, true)
-    report.field('Resultado esperado', step.expectedResult, true)
-    report.field('Resultado actual', step.actualResult, true)
-    report.field('Estado del paso', step.status)
-  }
-
-  const ordered = captures.slice().sort((left, right) => left.order - right.order)
-  for (const [index, capture] of ordered.entries()) {
-    const step = capture.stepId && stepNumbers.get(capture.stepId)
-    await addEvidence(report, capture, step ? `Paso ${step}  /  Captura ${index + 1}` : `Captura de escenario ${index + 1}`)
-  }
+  scenarioFields(report, scenario)
+  scenario.steps.forEach((step, index) => stepDetails(report, step, index + 1))
+  await scenarioCaptures(report, scenario, captures)
+  await sharedDetails(report, documentation)
 }
 
 export async function makePdf(bundle: ProjectBundle): Promise<Blob> {
@@ -294,7 +331,11 @@ export async function makePdf(bundle: ProjectBundle): Promise<Blob> {
   cover(report, bundle)
   scenarioIndex(report, scenarios)
   for (const scenario of scenarios) {
-    await scenarioDetails(report, scenario, byScenario.get(scenario.id) ?? [])
+    const captures = byScenario.get(scenario.id) ?? []
+    const documentation = sharedDocumentationFor(scenario, scenarios, bundle.evidence)
+    const relatedCaptures = captures.length ? captures : documentation.flatMap((entry) => entry.evidence)
+    const documented = isDocumented(scenario, relatedCaptures, scenarios)
+    await scenarioDetails(report, scenario, captures, documentation, documented)
   }
   report.footer()
   return report.pdf.output('blob')

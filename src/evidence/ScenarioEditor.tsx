@@ -4,27 +4,36 @@ import {
 } from 'react'
 import {
   ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardList, FileImage,
-  ImagePlus, LoaderCircle, Plus, Trash2, X,
+  ImagePlus, Link2, LoaderCircle, Plus, Trash2, X,
 } from 'lucide-react'
-import { ScenarioStepsConflictError, statuses, type Evidence, type ExecutionStatus, type Scenario, type ScenarioDraft, type Step } from '../model'
+import {
+  ScenarioStepsConflictError, statuses, withExecutionDefaults, type DocumentationLink,
+  type Evidence, type ExecutionStatus, type NewEvidence, type Scenario, type ScenarioDraft, type SharedDocumentation, type Step,
+} from '../model'
+import { Modal, StatusBadge } from '../ui'
 import { processImage } from './processImage'
 import './scenario.css'
 
-type NewEvidence = Omit<Evidence, 'id' | 'projectId' | 'scenarioId' | 'order'>
 type ScenarioChanges = Partial<ScenarioDraft & { steps: Step[] }>
 type EvidenceChanges = Partial<Pick<Evidence, 'caption' | 'stepId'>>
 type ScenarioWrite = { changes: ScenarioChanges; expectedSteps?: Step[] }
 const MAX_TEXT_LENGTH = 100_000
 const MAX_STEPS = 5_000
+const NO_UPLOAD_STEP = ':scenario'
+const SHARE_SEARCH_LIMIT = 60
 
 interface ScenarioEditorProps {
   scenario: Scenario
   evidence: Evidence[]
+  projectScenarios: Scenario[]
+  sharedDocumentation: SharedDocumentation[]
   onSave: (scenario: Scenario, changes: ScenarioChanges, expectedSteps?: Step[]) => Promise<void>
   onAdd: (images: NewEvidence[]) => Promise<void>
   onUpdateEvidence: (item: Evidence, changes: EvidenceChanges) => Promise<void>
   onMoveEvidence: (id: string, direction: -1 | 1) => Promise<void>
   onDeleteEvidence: (id: string) => Promise<void>
+  onShare: (targetScenarioIds: string[], sourceStepId?: string) => Promise<void>
+  onUnshare: (link: DocumentationLink) => Promise<void>
   onBack: () => void
   onPrevious?: () => void
   onNext?: () => void
@@ -143,6 +152,116 @@ function StatusSelect({ value, onChange }: { value: ExecutionStatus; onChange: (
   </select>
 }
 
+function ExecutionText({ value, onChange, rows, placeholder }: {
+  value: string; onChange: (value: string) => void; rows: number; placeholder: string
+}) {
+  const [editing, setEditing] = useState<string | null>(null)
+  return <textarea maxLength={MAX_TEXT_LENGTH} rows={rows} placeholder={placeholder} value={editing ?? value}
+    onFocus={() => setEditing(value)} onBlur={() => setEditing(null)} onChange={(event) => {
+      setEditing(event.target.value)
+      onChange(event.target.value)
+    }} />
+}
+
+function shareSearchKey(value: string) {
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
+}
+
+function ShareDocumentationDialog({ source, targets, onShare, onClose }: {
+  source: Scenario; targets: Scenario[]; onShare: ScenarioEditorProps['onShare']; onClose: () => void
+}) {
+  const [sourceStepId, setSourceStepId] = useState('')
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const search = shareSearchKey(query)
+  const matches = targets.filter((target) => shareSearchKey(`${target.sourceId} ${target.title}`).includes(search))
+
+  async function submit() {
+    if (busy || !selected.length) return
+    setBusy(true)
+    setError('')
+    try {
+      await onShare(selected, sourceStepId || undefined)
+      onClose()
+    } catch (failure) {
+      setError(errorMessage(failure, 'No fue posible compartir la documentación.'))
+      setBusy(false)
+    }
+  }
+
+  return <Modal title="Compartir documentación" close={onClose} busy={busy}>
+    <form className="scenario-share-form" onSubmit={(event) => { event.preventDefault(); void submit() }}>
+      <Field label="Documentación que se comparte">
+        <select value={sourceStepId} onChange={(event) => setSourceStepId(event.target.value)} disabled={busy}>
+          <option value="">Todo el escenario</option>
+          {source.steps.map((step, index) => <option key={step.id} value={step.id}>
+            {`Paso ${index + 1}${step.action.trim() ? `: ${step.action.trim().slice(0, 95)}` : ''}`}
+          </option>)}
+        </select>
+      </Field>
+      <Field label="Buscar escenarios">
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} disabled={busy} />
+      </Field>
+      <fieldset className="scenario-share-targets" disabled={busy}>
+        <legend>Escenarios de destino</legend>
+        {matches.length === 0 && <p className="scenario-help">No hay escenarios que coincidan.</p>}
+        {matches.slice(0, SHARE_SEARCH_LIMIT).map((target) => <label key={target.id} className="scenario-check scenario-share-target">
+          <input type="checkbox" checked={selected.includes(target.id)} onChange={(event) => {
+            const checked = event.target.checked
+            setSelected((current) => checked ? [...current, target.id] : current.filter((id) => id !== target.id))
+          }} />
+          <span><strong>{target.sourceId}</strong> {target.title}</span>
+        </label>)}
+        {matches.length > SHARE_SEARCH_LIMIT && <p className="scenario-help">Se muestran {SHARE_SEARCH_LIMIT} coincidencias. Afina la búsqueda para ver otras.</p>}
+      </fieldset>
+      <p className="scenario-help" aria-live="polite">{selected.length} {selected.length === 1 ? 'escenario seleccionado' : 'escenarios seleccionados'}</p>
+      {error && <p className="scenario-error" role="alert">{error}</p>}
+      <div className="actions modal-actions">
+        <button type="button" className="button secondary" onClick={onClose} disabled={busy}>Cancelar</button>
+        <button type="submit" className="button primary" disabled={busy || selected.length === 0}>{busy ? 'Compartiendo…' : 'Compartir'}</button>
+      </div>
+    </form>
+  </Modal>
+}
+
+function LinkedDocumentation({ entry, busy, onRemove, onPreview }: {
+  entry: SharedDocumentation; busy: boolean; onRemove: () => void; onPreview: (item: Evidence) => void
+}) {
+  const { source, step, evidence } = entry
+  const stepNumber = step ? source.steps.findIndex((item) => item.id === step.id) + 1 : 0
+  const result = step ?? withExecutionDefaults(source)
+  const values = [
+    ['Resultado esperado', step?.expectedResult ?? source.expectedResult],
+    ['Resultado obtenido', result.actualResult],
+    ['Comentarios', 'comments' in result ? result.comments : ''],
+  ].filter(([, value]) => value.trim())
+
+  return <li className="scenario-shared-item">
+    <div className="scenario-section-heading">
+      <strong>{source.sourceId} · {source.title}</strong>
+      <button type="button" className="button secondary" onClick={onRemove} disabled={busy}
+        aria-label={`Quitar vínculo de ${source.sourceId}${stepNumber ? `, paso ${stepNumber}` : ''}`}>
+        Quitar vínculo
+      </button>
+    </div>
+    <div className="scenario-section-actions">
+      <span className="scenario-help">{stepNumber ? `Paso ${stepNumber}` : 'Todo el escenario'} · {evidence.length} {evidence.length === 1 ? 'captura' : 'capturas'}</span>
+      <StatusBadge status={step?.status ?? source.executionStatus} />
+    </div>
+    {step?.action && <p className="scenario-shared-action">{step.action}</p>}
+    {values.length > 0 && <dl className="scenario-shared-values">
+      {values.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+    </dl>}
+    {evidence.length > 0 && <ul className="scenario-shared-captures">
+      {evidence.map((item, index) => <li key={item.id}>
+        <button type="button" className="button secondary" onClick={() => onPreview(item)}>{item.caption || `Captura ${index + 1}`}</button>
+      </li>)}
+    </ul>}
+  </li>
+}
+
 function useEvidenceUrl(blob: Blob) {
   // Each card is keyed by evidence ID. Editing captions and order leaves the saved bytes intact.
   const original = useRef(blob)
@@ -242,7 +361,8 @@ function EvidenceCard({ item, index, total, steps, onPreview, onPatch, onMove, o
 }
 
 function ScenarioEditorView({
-  scenario, evidence, onSave, onAdd, onUpdateEvidence, onMoveEvidence, onDeleteEvidence,
+  scenario, evidence, projectScenarios, sharedDocumentation,
+  onSave, onAdd, onUpdateEvidence, onMoveEvidence, onDeleteEvidence, onShare, onUnshare,
   onBack, onPrevious, onNext,
 }: ScenarioEditorProps) {
   const { draft, status, error, stepConflict, update, flush, keepSavedSteps } = useScenarioAutosave(scenario, onSave)
@@ -250,16 +370,20 @@ function ScenarioEditorView({
   const [uploadProgress, setUploadProgress] = useState('')
   const [evidenceError, setEvidenceError] = useState('')
   const [evidenceWrites, setEvidenceWrites] = useState(0)
-  const [uploadStep, setUploadStep] = useState('')
-  const [previewId, setPreviewId] = useState<string | null>(null)
+  const [uploadStep, setUploadStep] = useState<string | null>()
+  const [preview, setPreview] = useState<Evidence>()
   const [leaving, setLeaving] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [sharingNotice, setSharingNotice] = useState('')
+  const [sharingError, setSharingError] = useState('')
+  const [unlinking, setUnlinking] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const uploadController = useRef<AbortController | null>(null)
   const evidenceQueue = useRef<Promise<void>>(Promise.resolve())
   const mounted = useRef(false)
   const pasteHandler = useRef<(files: File[]) => void>(() => {})
   const orderedEvidence = [...evidence].sort((a, b) => a.order - b.order)
-  const preview = evidence.find((item) => item.id === previewId)
+  const targets = projectScenarios.filter((candidate) => candidate.id !== scenario.id && candidate.projectId === scenario.projectId)
 
   useEffect(() => {
     mounted.current = true
@@ -299,7 +423,7 @@ function ScenarioEditorView({
   }
 
   async function addFiles(files: File[]) {
-    if (!files.length || uploadController.current || leaving) return
+    if (!files.length || uploadController.current || leaving || sharing) return
     if (files.length > 12) {
       setEvidenceError('Selecciona hasta 12 capturas por operación.')
       return
@@ -314,7 +438,7 @@ function ScenarioEditorView({
         setUploadProgress(`Procesando captura ${index + 1} de ${files.length}`)
         try {
           const optimized = await processImage(file, controller.signal)
-          images.push({ ...optimized, stepId: uploadStep || undefined, caption: '' })
+          images.push({ ...optimized, stepId: uploadStep, caption: '' })
         } catch (failure) {
           if (controller.signal.aborted) return
           errors.push(`${file.name || 'Captura'} · ${errorMessage(failure, 'No se pudo procesar el archivo.')}`)
@@ -323,7 +447,7 @@ function ScenarioEditorView({
       if (images.length && !controller.signal.aborted) {
         setUploadProgress('Guardando capturas')
         await queueEvidence(async () => {
-          if (uploadStep && !await flush()) throw new Error('Guarda el escenario antes de asociar capturas a un paso.')
+          if (uploadStep !== null && !await flush()) throw new Error('Guarda el escenario antes de asociar capturas a un paso.')
           await onAdd(images)
         })
       }
@@ -341,7 +465,7 @@ function ScenarioEditorView({
   })
 
   async function navigate(destination: () => void) {
-    if (leaving || uploadController.current) return
+    if (leaving || uploadController.current || unlinking) return
     setLeaving(true)
     const [scenarioSaved] = await Promise.all([flush(), evidenceQueue.current])
     if (scenarioSaved) destination()
@@ -361,8 +485,31 @@ function ScenarioEditorView({
   }
 
   function removeStep(id: string) {
-    if (uploadStep === id) setUploadStep('')
+    if (uploadStep === id) setUploadStep(undefined)
     update((value) => ({ steps: value.steps.filter((step) => step.id !== id) }))
+  }
+
+  async function share(targetScenarioIds: string[], sourceStepId?: string) {
+    const [saved] = await Promise.all([flush(), evidenceQueue.current])
+    if (!saved) throw new Error('Guarda el escenario antes de compartir su documentación.')
+    await onShare(targetScenarioIds, sourceStepId)
+    const count = targetScenarioIds.length
+    setSharingNotice(`Documentación vinculada a ${count} ${count === 1 ? 'escenario' : 'escenarios'}.`)
+  }
+
+  async function unshare(link: DocumentationLink) {
+    if (unlinking) return
+    setUnlinking(true)
+    setSharingError('')
+    setSharingNotice('')
+    try {
+      await onUnshare(link)
+      setSharingNotice('Vínculo eliminado.')
+    } catch (failure) {
+      setSharingError(errorMessage(failure, 'No fue posible quitar el vínculo.'))
+    } finally {
+      setUnlinking(false)
+    }
   }
 
   function handleDrop(event: DragEvent) {
@@ -377,9 +524,10 @@ function ScenarioEditorView({
     void addFiles(files)
   }
 
-  const navigationDisabled = leaving || Boolean(uploadProgress)
+  const navigationDisabled = leaving || Boolean(uploadProgress) || unlinking
   const saveStatus = status === 'saved' && evidenceWrites > 0 ? 'saving' : status
   const extraFields = Object.entries(draft.metadata).filter(([, value]) => value.trim())
+  const { actualResult, comments } = withExecutionDefaults(draft)
 
   return <div className="scenario-editor">
     <button type="button" className="scenario-back" onClick={() => void navigate(onBack)} disabled={navigationDisabled}>
@@ -421,21 +569,33 @@ function ScenarioEditorView({
             </Field>
           </div>
           <Field label="Resultado obtenido">
-            <textarea maxLength={MAX_TEXT_LENGTH} value={draft.actualResult} onChange={(event) => update({ actualResult: event.target.value })} rows={3} placeholder="Describe qué ocurrió durante la prueba." />
+            <ExecutionText value={actualResult} onChange={(value) => update({ actualResult: value })} rows={3} placeholder="Describe qué ocurrió durante la prueba." />
           </Field>
           <Field label="Comentarios">
-            <textarea maxLength={MAX_TEXT_LENGTH} value={draft.comments} onChange={(event) => update({ comments: event.target.value })} rows={2} placeholder="Registra observaciones o motivos de bloqueo." />
+            <ExecutionText value={comments} onChange={(value) => update({ comments: value })} rows={2} placeholder="Registra observaciones o motivos de bloqueo." />
           </Field>
         </section>
 
         <section className="scenario-panel" aria-labelledby="scenario-evidence-title">
           <div className="scenario-section-heading">
             <h2 id="scenario-evidence-title">Evidencias</h2>
-            <span className="scenario-count">{evidence.length} {evidence.length === 1 ? 'captura' : 'capturas'}</span>
+            <div className="scenario-section-actions">
+              <span className="scenario-count">{evidence.length} {evidence.length === 1 ? 'captura' : 'capturas'}</span>
+              {targets.length > 0 && <button type="button" className="button secondary" onClick={() => {
+                setSharingNotice('')
+                setSharingError('')
+                setSharing(true)
+              }} disabled={navigationDisabled}>
+                <Link2 size={17} aria-hidden="true" /> Compartir documentación
+              </button>}
+            </div>
           </div>
           {draft.steps.length > 0 && <Field label="Asociar nuevas capturas">
-            <select value={uploadStep} onChange={(event) => setUploadStep(event.target.value)} disabled={Boolean(uploadProgress)}>
-              <option value="">Escenario general</option>
+            <select value={uploadStep === null ? NO_UPLOAD_STEP : uploadStep ?? ''} onChange={(event) => {
+              setUploadStep(event.target.value === NO_UPLOAD_STEP ? null : event.target.value || undefined)
+            }} disabled={Boolean(uploadProgress)}>
+              <option value="">Automática (siguiente paso)</option>
+              <option value={NO_UPLOAD_STEP}>Escenario general (sin paso)</option>
               {draft.steps.map((step, index) => <option key={step.id} value={step.id}>Paso {index + 1}</option>)}
             </select>
           </Field>}
@@ -463,7 +623,7 @@ function ScenarioEditorView({
           </div>}
           {orderedEvidence.length > 0 && <ol className="scenario-evidence-list">
             {orderedEvidence.map((item, index) => <EvidenceCard key={item.id} item={item} index={index} total={orderedEvidence.length}
-              steps={draft.steps} onPreview={() => setPreviewId(item.id)}
+              steps={draft.steps} onPreview={() => setPreview(item)}
               onPatch={(changes) => queueEvidence(async () => {
                 if (changes.stepId && !await flush()) throw new Error('Guarda el escenario antes de asociar capturas a un paso.')
                 await onUpdateEvidence(item, changes)
@@ -472,6 +632,16 @@ function ScenarioEditorView({
               onDelete={() => { void queueEvidence(() => onDeleteEvidence(item.id)) }} />)}
           </ol>}
         </section>
+
+        {(sharedDocumentation.length > 0 || sharingNotice || sharingError) && <section className="scenario-panel" aria-labelledby="scenario-shared-title">
+          <h2 id="scenario-shared-title">Documentación compartida</h2>
+          {sharingNotice && <p className="scenario-share-feedback" role="status">{sharingNotice}</p>}
+          {sharingError && <p className="scenario-error" role="alert">{sharingError}</p>}
+          {sharedDocumentation.length > 0 && <ul className="scenario-shared-list">
+            {sharedDocumentation.map((entry) => <LinkedDocumentation key={`${entry.link.sourceScenarioId}/${entry.link.sourceStepId ?? ''}`}
+              entry={entry} busy={unlinking} onRemove={() => void unshare(entry.link)} onPreview={setPreview} />)}
+          </ul>}
+        </section>}
 
         <section className="scenario-panel" aria-labelledby="scenario-steps-title">
           <div className="scenario-section-heading">
@@ -554,7 +724,8 @@ function ScenarioEditorView({
         Siguiente escenario <ChevronRight size={17} aria-hidden="true" />
       </button>}
     </nav>}
-    {preview && <EvidencePreview key={preview.id} item={preview} onClose={() => setPreviewId(null)} />}
+    {preview && <EvidencePreview key={preview.id} item={preview} onClose={() => setPreview(undefined)} />}
+    {sharing && <ShareDocumentationDialog source={draft} targets={targets} onShare={share} onClose={() => setSharing(false)} />}
   </div>
 }
 

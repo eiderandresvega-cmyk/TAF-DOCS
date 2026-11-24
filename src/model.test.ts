@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyScenario, isDocumented, progressFor, type Evidence, type Scenario } from './model'
+import { emptyScenario, isDocumented, progressFor, sharedDocumentationFor, withExecutionDefaults, type Evidence, type Scenario } from './model'
 
 const completed = { ...emptyScenario(), id: 'one', projectId: 'p', order: 0, steps: [], executionStatus: 'Passed',
   expectedResult: 'Se guarda el registro.', actualResult: 'El registro quedó guardado.' } satisfies Scenario
@@ -16,6 +16,29 @@ describe('avance del proyecto', () => {
   it('requiere resultados y permite eximir la captura', () => {
     expect(isDocumented({ ...completed, evidenceRequired: false }, [])).toBe(true)
     expect(isDocumented({ ...completed, expectedResult: ' ' }, [capture])).toBe(false)
-    expect(isDocumented({ ...completed, actualResult: '' }, [capture])).toBe(false)
+    expect(isDocumented({ ...completed, actualResult: '' }, [capture])).toBe(true)
+    expect(isDocumented({ ...completed, executionStatus: 'Failed', actualResult: '' }, [capture])).toBe(false)
+  })
+
+  it('aplica valores por defecto a un Passed y conserva la redacción explícita', () => {
+    const emptyResult = { ...completed, actualResult: '', comments: '' }
+    expect(withExecutionDefaults(emptyResult)).toEqual({
+      actualResult: completed.expectedResult, comments: 'Escenario ejecutado exitosamente',
+    })
+    expect(withExecutionDefaults({ ...emptyResult, executionStatus: 'Bloqueado' })).toEqual({ actualResult: '', comments: '' })
+    expect(withExecutionDefaults({ ...emptyResult, actualResult: 'Resultado de QA', comments: 'Observación manual' }))
+      .toEqual({ actualResult: 'Resultado de QA', comments: 'Observación manual' })
+  })
+
+  it('atribuye al escenario de destino solo las capturas del paso compartido', () => {
+    const step = { id: 'step-1', action: 'Consultar', expectedResult: '', actualResult: '', status: 'No ejecutado' as const }
+    const source = { ...completed, steps: [step] }
+    const target = { ...completed, id: 'two', documentationLinks: [{ sourceScenarioId: source.id, sourceStepId: step.id }] }
+    const items = [capture, { ...capture, id: 'with-step', stepId: step.id }]
+
+    expect(sharedDocumentationFor(target, [source, target], items)[0].evidence.map((item) => item.id)).toEqual(['with-step'])
+    expect(isDocumented(target, items, [source, target])).toBe(true)
+    expect(progressFor([source, target], items).documented).toBe(2)
+    expect(progressFor([source, target], [capture]).documented).toBe(1)
   })
 })

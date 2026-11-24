@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { ScenarioStepsConflictError, type Evidence, type Project, type ProjectBundle, type ProjectDetails, type Scenario, type ScenarioDraft, type Step } from './model'
+import { ScenarioStepsConflictError, sameDocumentationLink, type DocumentationLink, type Evidence, type NewEvidence, type Project, type ProjectBundle, type ProjectDetails, type Scenario, type ScenarioDraft, type Step } from './model'
+import { numberedSteps } from './numbered-steps'
+import { assignCaptureStep } from './scenario-evidence'
 
 const PROJECT_LIMIT = 3
 const db = new Dexie('taf-docs') as Dexie & {
@@ -8,10 +10,32 @@ const db = new Dexie('taf-docs') as Dexie & {
   evidence: EntityTable<Evidence, 'id'>
 }
 
-db.version(1).stores({
+const stores = {
   projects: 'id, updatedAt',
   scenarios: 'id, projectId, [projectId+order]',
   evidence: 'id, projectId, scenarioId, [scenarioId+order]',
+}
+
+db.version(1).stores(stores)
+db.version(2).stores(stores).upgrade(async (transaction) => {
+  const imported = new Map<string, { steps: Step[]; occupied: Set<string> }>()
+  await transaction.table<Scenario, string>('scenarios').toCollection().modify((scenario) => {
+    if (scenario.steps.length) return false
+    const steps = numberedSteps(scenario.detailedSteps)
+    if (!steps.length) return false
+
+    scenario.steps = steps
+    imported.set(scenario.id, { steps, occupied: new Set() })
+  })
+  if (!imported.size) return
+
+  await transaction.table<Evidence, string>('evidence').orderBy('[scenarioId+order]').modify((capture) => {
+    const plan = imported.get(capture.scenarioId)
+    if (!plan || capture.stepId) return false
+    const placement = assignCaptureStep(capture, plan.steps, plan.occupied)
+    if (!placement.stepId) return false
+    Object.assign(capture, placement)
+  })
 })
 
 export function listProjects() {
@@ -46,7 +70,9 @@ export function createProject(details: ProjectDetails, drafts: ScenarioDraft[], 
   const now = new Date().toISOString()
   return saveNewBundle({
     project: { ...details, id, source, createdAt: now, updatedAt: now },
-    scenarios: drafts.map((draft, order) => ({ ...draft, id: crypto.randomUUID(), projectId: id, order, steps: [] })),
+    scenarios: drafts.map((draft, order) => ({ ...draft, id: crypto.randomUUID(), projectId: id, order,
+      steps: numberedSteps(draft.detailedSteps),
+    })),
     evidence: [],
   })
 }
@@ -65,6 +91,15 @@ export function restoreProject(bundle: ProjectBundle) {
     })
     return { ...scenario, id, projectId, steps }
   })
+  for (const scenario of scenarios) {
+    if (!scenario.documentationLinks) continue
+    scenario.documentationLinks = scenario.documentationLinks.map((link) => {
+      const sourceScenarioId = scenarioIds.get(link.sourceScenarioId)
+      const sourceStepId = link.sourceStepId ? stepIds.get(link.sourceStepId) : undefined
+      if (!sourceScenarioId || (link.sourceStepId && !sourceStepId)) throw new Error('Hay un vínculo de documentación sin origen en la copia.')
+      return { sourceScenarioId, sourceStepId }
+    })
+  }
   const evidence = bundle.evidence.map((item) => {
     const scenarioId = scenarioIds.get(item.scenarioId)
     if (!scenarioId) throw new Error('Hay evidencias sin escenario en la copia.')
@@ -90,7 +125,7 @@ export async function addScenario(projectId: string, draft: ScenarioDraft) {
       throw new Error('Ya existe un escenario con este ID.')
     }
     const order = Math.max(-1, ...scenarios.map((scenario) => scenario.order)) + 1
-    await db.scenarios.add({ ...draft, id, projectId, order, steps: [] })
+    await db.scenarios.add({ ...draft, id, projectId, order, steps: numberedSteps(draft.detailedSteps) })
   })
   return id
 }
@@ -114,11 +149,18 @@ export async function updateScenario(scenario: Scenario, changes: Partial<Scenar
       const stepIds = new Set(changes.steps.map((step) => step.id))
       await db.evidence.where('scenarioId').equals(scenario.id).filter((item) => Boolean(item.stepId && !stepIds.has(item.stepId)))
         .modify({ stepId: undefined })
+      if (current.steps.some((step) => !stepIds.has(step.id))) {
+        const shouldRemove = (link: DocumentationLink) => link.sourceScenarioId === scenario.id &&
+          link.sourceStepId !== undefined && !stepIds.has(link.sourceStepId)
+        await db.scenarios.where('projectId').equals(scenario.projectId).filter((target) =>
+          target.documentationLinks?.some(shouldRemove) ?? false,
+        ).modify((target) => {
+          target.documentationLinks = target.documentationLinks?.filter((link) => !shouldRemove(link))
+        })
+      }
     }
   })
 }
-
-type NewEvidence = Omit<Evidence, 'id' | 'projectId' | 'scenarioId' | 'order'>
 
 export async function addEvidence(scenario: Scenario, images: NewEvidence[]) {
   await db.transaction('rw', db.projects, db.scenarios, db.evidence, async () => {
@@ -128,11 +170,49 @@ export async function addEvidence(scenario: Scenario, images: NewEvidence[]) {
     const evidence = await db.evidence.where('scenarioId').equals(scenario.id).sortBy('order')
     if (evidence.length + images.length > 100) throw new Error('Este escenario admite hasta 100 capturas.')
     const start = (evidence.at(-1)?.order ?? -1) + 1
-    const stepIds = new Set(current.steps.map((step) => step.id))
+    const occupied = new Set(evidence.flatMap((item) => item.stepId ? [item.stepId] : []))
     await db.evidence.bulkAdd(images.map((item, index) => ({ ...item, id: crypto.randomUUID(),
       scenarioId: scenario.id, projectId: scenario.projectId, order: start + index,
-      stepId: item.stepId && stepIds.has(item.stepId) ? item.stepId : undefined,
+      ...assignCaptureStep(item, current.steps, occupied),
     })))
+  })
+}
+
+export async function shareDocumentation(source: Scenario, targetScenarioIds: string[], sourceStepId?: string) {
+  await db.transaction('rw', db.projects, db.scenarios, async () => {
+    const current = await db.scenarios.get(source.id)
+    if (!current || current.projectId !== source.projectId) throw new Error('El escenario de origen ya no existe.')
+    if (sourceStepId && !current.steps.some((step) => step.id === sourceStepId)) throw new Error('El paso que intentas compartir ya no existe.')
+
+    const ids = [...new Set(targetScenarioIds)]
+    if (!ids.length) throw new Error('Selecciona al menos un escenario de destino.')
+    const link: DocumentationLink = { sourceScenarioId: source.id, sourceStepId }
+    const targets = await db.scenarios.bulkGet(ids)
+    const changed = targets.flatMap((target) => {
+      if (!target || target.id === source.id || target.projectId !== source.projectId) {
+        throw new Error('La documentación solo se puede compartir con otros escenarios del proyecto.')
+      }
+      const links = target.documentationLinks ?? []
+      if (links.some((entry) => sameDocumentationLink(entry, link) ||
+        (entry.sourceScenarioId === source.id && !entry.sourceStepId))) return []
+      const kept = sourceStepId ? links : links.filter((entry) => entry.sourceScenarioId !== source.id)
+      return [{ ...target, documentationLinks: [...kept, link] }]
+    })
+    if (!changed.length) return
+    await touchProject(source.projectId)
+    await db.scenarios.bulkPut(changed)
+  })
+}
+
+export async function unshareDocumentation(target: Scenario, link: DocumentationLink) {
+  await db.transaction('rw', db.projects, db.scenarios, async () => {
+    const current = await db.scenarios.get(target.id)
+    if (!current || current.projectId !== target.projectId) throw new Error('El escenario de destino ya no existe.')
+    const links = current.documentationLinks ?? []
+    const remaining = links.filter((entry) => !sameDocumentationLink(entry, link))
+    if (remaining.length === links.length) return
+    await touchProject(target.projectId)
+    await db.scenarios.update(current.id, { documentationLinks: remaining })
   })
 }
 

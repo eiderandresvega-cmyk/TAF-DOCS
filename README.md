@@ -24,10 +24,10 @@ El comando de producción genera `dist/`. La primera carga de esa versión insta
 ## Flujo de demostración
 
 1. Abre el proyecto de ejemplo o descarga la plantilla Excel e impórtala desde **Con Test Scripts**.
-2. Abre un escenario y pega una captura sintética con Ctrl+V o Cmd+V. También puedes arrastrar un PNG, JPEG o WebP, o seleccionarlo desde el equipo.
-3. Registra el estado y el resultado obtenido. En el tablero puedes buscar por ID, título o componente y filtrar por estado o prioridad.
-4. Descarga el PDF. Incluye portada, resultados, evidencias ordenadas y escenarios pendientes.
-5. Exporta una copia `.tafproject` y recupérala desde **Importar copia**. El formato incluye una versión e integridad SHA-256.
+2. Registra el estado del escenario. Al marcar **Passed**, el resultado esperado y el comentario de éxito completan los campos vacíos. Puedes editar ambos textos.
+3. Pega, arrastra o selecciona capturas. Los pasos numerados del Excel aparecen como pasos editables. Las nuevas capturas se asocian al siguiente paso libre y reciben una descripción editable.
+4. Usa **Compartir documentación** para vincular un paso o un escenario completo a uno o varios destinos. El PDF incluye esa evidencia en cada destino e identifica de dónde viene.
+5. Descarga el PDF y exporta una copia `.tafproject`. La copia conserva capturas y vínculos y se recupera desde **Importar copia**.
 
 ## Datos y almacenamiento
 

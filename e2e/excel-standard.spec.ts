@@ -48,6 +48,8 @@ test('importa 1000 escenarios del formato estándar y conserva sus datos', async
   await page.getByRole('button', { name: new RegExp(objective) }).click()
   await expect(page.getByRole('heading', { name: objective })).toBeVisible()
   await expect(page.getByLabel('Pasos del guion')).toHaveValue(steps)
+  await expect(page.getByRole('group', { name: 'Paso 1' }).getByLabel('Acción')).toHaveValue('Abrir la pantalla de acceso.')
+  await expect(page.getByRole('group', { name: 'Paso 2' }).getByLabel('Acción')).toHaveValue('Iniciar sesión con una cuenta de prueba.')
   await expect(page.getByLabel('Estado de ejecución')).toHaveValue('Passed')
   await expect(page.getByLabel('Comentarios')).toHaveValue(observations)
 })

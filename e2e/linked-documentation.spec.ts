@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import { QA_DOCUMENTADOR } from '../src/site-paths'
+
+const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAMklEQVR4nIXCMREAIAADscpBBCKYOyMCES8CEQhEwueSUXRm0VlFZxedU3QoOrfovKI//vV/gVdu7CQAAAAASUVORK5CYII=', 'base64')
+
+test('autocompleta resultados y capturas y reutiliza un paso en dos escenarios', async ({ page }) => {
+  await page.goto(QA_DOCUMENTADOR)
+  await page.getByRole('button', { name: 'Abrir proyecto de ejemplo' }).click()
+  await page.getByRole('button', { name: /UAT-003/ }).click()
+  const actual = page.getByRole('textbox', { name: 'Resultado obtenido', exact: true })
+  const comments = page.getByRole('textbox', { name: 'Comentarios', exact: true })
+  const status = page.getByRole('combobox', { name: 'Estado de ejecución', exact: true })
+  const saved = page.getByText('Guardado localmente', { exact: true })
+
+  await expect(status).toBeVisible()
+  await status.selectOption('Failed')
+  await expect(actual).toHaveValue('')
+  await expect(comments).toHaveValue('')
+  await status.selectOption('Passed')
+  await expect(actual).toHaveValue('Se muestran las transacciones del periodo seleccionado.')
+  await expect(comments).toHaveValue('Escenario ejecutado exitosamente')
+  await actual.fill('Se revisaron tres transacciones sintéticas.')
+  await comments.fill('Observación de QA conservada.')
+  await expect(saved).toBeVisible()
+  await page.reload()
+  await expect(actual).toHaveValue('Se revisaron tres transacciones sintéticas.')
+  await expect(comments).toHaveValue('Observación de QA conservada.')
+  await actual.fill('')
+  await comments.fill('')
+  await comments.blur()
+  await expect(actual).toHaveValue('Se muestran las transacciones del periodo seleccionado.')
+  await expect(comments).toHaveValue('Escenario ejecutado exitosamente')
+
+  await page.getByLabel('Seleccionar archivos de evidencia').setInputFiles(Array.from({ length: 4 }, (_, index) => ({
+    name: `captura-${index + 1}.png`, mimeType: 'image/png', buffer: image,
+  })))
+  await expect(page.getByLabel('Descripción de captura 1')).toHaveValue('Paso 1. Abrir el historial.')
+  await expect(page.getByLabel('Descripción de captura 3')).toHaveValue('Paso 3. Verificar la operación de referencia.')
+  await expect(page.getByLabel('Paso asociado a la captura 2').locator('option:checked')).toHaveText('Paso 2')
+  await expect(page.getByLabel('Paso asociado a la captura 4')).toHaveValue('')
+  await expect(page.getByLabel('Descripción de captura 4')).toHaveValue('')
+  await page.getByRole('button', { name: 'Compartir documentación' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Compartir documentación' })
+  await dialog.getByRole('combobox', { name: 'Documentación que se comparte' }).selectOption({ label: 'Paso 1: Abrir el historial.' })
+  await dialog.getByRole('checkbox', { name: /UAT-004/ }).check()
+  await dialog.getByRole('checkbox', { name: /UAT-005/ }).check()
+  await dialog.getByRole('button', { name: 'Compartir', exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.getByLabel('Descripción de captura 1').fill('Evidencia de historial revisada por QA')
+
+  const shared = page.getByRole('region', { name: 'Documentación compartida' })
+  await page.getByRole('button', { name: 'Siguiente escenario' }).click()
+  await expect(shared.getByText('Paso 1 · 1 captura')).toBeVisible()
+  await expect(shared.getByRole('button', { name: 'Evidencia de historial revisada por QA' })).toBeVisible()
+  await expect(status).toHaveValue('No ejecutado')
+  await page.getByRole('button', { name: 'Siguiente escenario' }).click()
+  await expect(shared.getByText('Paso 1 · 1 captura')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Escenarios', exact: true }).click()
+  await page.getByRole('button', { name: 'Exportar PDF' }).click()
+  const pdf = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Descargar PDF' }).click()
+  expect((await readFile(await (await pdf).path())).subarray(0, 4).toString()).toBe('%PDF')
+
+  const backup = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Copia de respaldo' }).click()
+  const backupBytes = await readFile(await (await backup).path())
+  await page.getByRole('button', { name: 'Proyectos', exact: true }).click()
+  await page.getByRole('button', { name: 'Importar copia', exact: true }).click()
+  await page.locator('input[accept=".tafproject"]').setInputFiles({
+    name: 'documentacion-sintetica.tafproject', mimeType: 'application/octet-stream', buffer: backupBytes,
+  })
+  await page.getByRole('button', { name: /UAT-004/ }).click()
+  await expect(shared.getByRole('button', { name: 'Evidencia de historial revisada por QA' })).toBeVisible()
+  await shared.getByRole('button', { name: 'Quitar vínculo de UAT-003, paso 1' }).click()
+  await expect(shared.getByText('Vínculo eliminado.')).toBeVisible()
+  await expect(shared.getByRole('button', { name: 'Evidencia de historial revisada por QA' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Siguiente escenario' }).click()
+  await expect(shared.getByRole('button', { name: 'Evidencia de historial revisada por QA' })).toBeVisible()
+})

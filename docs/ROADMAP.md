@@ -7,14 +7,14 @@ El MVP permite importar un test script de Excel o crear un proyecto manual, docu
 | Flujo | Alcance de la versión inicial |
 | --- | --- |
 | Importación | Validación `.xlsx` en formatos de 15 y 27 columnas, detección de encabezados, mapeo de portada y revisión de advertencias antes de crear el proyecto. |
-| Ejecución | Tablero con búsqueda, filtros y progreso de ejecución y documentación. Editor de resultados, pasos y comentarios con guardado en el navegador. |
-| Evidencias | Capturas desde el portapapeles, por arrastre o desde el selector de archivos. Miniaturas, descripciones, orden y asociación a pasos. |
-| Entrega | Informe PDF con datos generales, autorización, índice, resultados, evidencias y escenarios pendientes. Respaldo `.tafproject` para recuperar una copia completa. |
+| Ejecución | Tablero con búsqueda, filtros y progreso. Pasos del Excel y valores por defecto editables al marcar Passed. |
+| Evidencias | Capturas por portapapeles, arrastre o selector. Asociación y descripción automáticas disponibles, con edición manual y vínculos entre escenarios. |
+| Entrega | PDF con resultados, evidencias y documentación compartida. Respaldo `.tafproject` con los vínculos del proyecto. |
 | Continuidad | Uso sin conexión tras instalar los recursos en la primera carga. Solicitud de almacenamiento persistente y recordatorio de respaldo al acercarse a los 14 días. |
 
 ### Estado de la versión inicial
 
-- Compilación de producción y 26 pruebas unitarias aprobadas. Las 7 pruebas de navegador pasaron en local y en ElCoVeg. Las plantillas de referencia de 15 y 27 columnas se importaron sin advertencias. La validación de volumen incluyó 10, 27 y 1.000 escenarios sintéticos.
+- Compilación de producción, 43 pruebas unitarias y 9 pruebas de navegador en local aprobadas. Las plantillas de referencia de 15 y 27 columnas se importaron sin advertencias. La validación de volumen incluyó 10, 27 y 1.000 escenarios sintéticos.
 - Recuperación de una versión anterior del Documentador con otra pestaña abierta y conservación del proyecto guardado. [Actualizar TAF Docs](https://elcoveg.com/TAF/Actualizar)
 - Demo personal publicada en Vercel Hobby. El portal reúne los proyectos de TAF y abre el Documentador QA en su ruta propia. [Inicio TAF](https://elcoveg.com/TAF/) · [Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 - Flujo sintético verificado con cero solicitudes que contuvieran el Excel, los datos del proyecto o las capturas. Los resultados y tiempos locales están en el [informe de entrega](ENTREGA.md).

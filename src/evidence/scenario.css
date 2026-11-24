@@ -186,6 +186,78 @@
   font-size: .875rem;
 }
 
+.scenario-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+}
+
+.scenario-share-form {
+  display: grid;
+  gap: .85rem;
+}
+
+.scenario-share-form .modal-actions { margin-top: 0; }
+
+.scenario-share-targets {
+  display: grid;
+  gap: .55rem;
+  min-width: 0;
+  max-height: min(18rem, 34dvh);
+  padding: .7rem;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.scenario-share-targets legend {
+  padding-inline: .25rem;
+  color: var(--muted);
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.scenario-share-target {
+  padding: .45rem .5rem;
+  border-radius: 6px;
+  background: var(--bg);
+  overflow-wrap: anywhere;
+}
+
+.scenario-share-target > span { color: var(--ink); }
+.scenario-share-target strong { color: var(--accent); }
+.scenario-share-feedback { color: var(--accent); }
+
+.scenario-shared-list,
+.scenario-shared-captures {
+  display: grid;
+  gap: .65rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.scenario-shared-item {
+  display: grid;
+  gap: .55rem;
+  min-width: 0;
+  padding: .8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.scenario-shared-item .scenario-section-heading { flex-wrap: wrap; }
+.scenario-shared-action { white-space: pre-wrap; }
+.scenario-shared-values { display: grid; gap: .35rem; margin: 0; }
+.scenario-shared-values dt { color: var(--muted); font-size: .8rem; }
+.scenario-shared-values dd { margin: 0; white-space: pre-wrap; }
+.scenario-shared-captures { display: flex; flex-wrap: wrap; }
+.scenario-shared-captures li { max-width: 100%; }
+.scenario-shared-captures button { max-width: 100%; text-align: left; }
+
 .scenario-drop {
   display: grid;
   justify-items: center;

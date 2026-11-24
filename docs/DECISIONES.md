@@ -20,15 +20,21 @@ SheetJS Community Edition lee `.xlsx` en un Web Worker. El importador verifica l
 
 El editor admite JPEG, PNG y WebP estáticos. Verifica el formato y el tamaño antes de decodificar la imagen, reduce sus dimensiones y guarda una versión JPEG optimizada y una miniatura. El navegador realiza el procesamiento en un worker cuando dispone de las interfaces necesarias y recurre al hilo principal cuando corresponde. La recodificación elimina los metadatos del archivo original.
 
+Los pasos numerados se convierten en registros editables al importar el Excel. Las capturas se asocian por orden al siguiente paso disponible y reciben una descripción inicial basada en su acción. Al agotar los pasos quedan como evidencia del escenario. El editor permite elegir un paso y modificar la descripción. La migración aplica la secuencia a las capturas existentes cuando genera por primera vez los pasos de un escenario y conserva las descripciones que ya estaban guardadas.
+
 ## Exportación PDF
 
 jsPDF genera el informe en el navegador. El formato carta sigue la estructura general de la referencia Word con identidad visual de TAF, datos generales, autorización, tabla de escenarios y evidencias con resultados esperados y obtenidos. El PDF conserva el orden de las capturas y usa orientación horizontal para las más anchas. Los escenarios incompletos llevan la indicación de documentación pendiente.
 
 La ejecución y la documentación se calculan por separado. Un escenario cuenta como ejecutado al llegar a un estado terminal. Cuenta como documentado si también registra el resultado esperado, el obtenido y una captura cuando la evidencia es obligatoria.
 
+Para escenarios en **Passed**, el resultado esperado completa el resultado obtenido vacío y se muestra el comentario de éxito si aún está vacío. Los valores explícitos tienen prioridad en la interfaz y el PDF. Los vínculos de documentación apuntan a un escenario o paso del mismo proyecto. El PDF identifica el origen y repite su documentación en cada destino. La evidencia vinculada puede cubrir el requisito de captura del destino, que conserva su propio estado.
+
 ## Respaldo portable
 
 `fflate` empaqueta el proyecto en un ZIP con extensión `.tafproject`. El manifiesto versionado registra las huellas SHA-256 de los archivos de contenido. La restauración comprueba rutas, tamaño, formato, integridad y relaciones entre registros antes de escribir el proyecto. Los identificadores internos se regeneran al restaurar una copia.
+
+La versión 2 guarda los vínculos junto con los escenarios y reutiliza los mismos archivos de captura. Sigue leyendo respaldos de la versión 1 y reconstruye sus pasos numerados cuando corresponde.
 
 Cada copia admite hasta 192 MiB, 5.000 escenarios y 4.000 capturas con sus miniaturas. Se admiten hasta 25 MiB por entrada y hasta 1 MiB para el manifiesto. La capacidad local del navegador puede superar el límite de una copia portable. Los hashes verifican integridad del contenido y la copia debe recibir el mismo tratamiento de confidencialidad que sus capturas y resultados.
 

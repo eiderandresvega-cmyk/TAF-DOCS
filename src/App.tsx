@@ -5,7 +5,7 @@ import { Dashboard } from './Dashboard'
 import { ImportScreen } from './ImportScreen'
 import { ScenarioEditor } from './evidence/ScenarioEditor'
 import { demoDetails, demoScenarios } from './demo'
-import { emptyDetails, type Project, type ProjectBundle } from './model'
+import { emptyDetails, sharedDocumentationFor, type Project, type ProjectBundle } from './model'
 import * as storage from './storage'
 import { BrandMark, DetailsFields, FileDrop, LocalBadge, Modal, ReportPreview } from './ui'
 import { TAF_HOME } from './site-paths'
@@ -116,8 +116,11 @@ function ProjectScreen({ projectId, scenarioId }: { projectId: string; scenarioI
   if (!scenario) return <main className="shell screen"><h1>Escenario no encontrado</h1><button className="button secondary" onClick={goProject}>Volver a escenarios</button></main>
 
   return <main className="shell screen scenario-screen"><ScenarioEditor scenario={scenario} evidence={evidence.filter((item) => item.scenarioId === scenario.id)}
+    projectScenarios={scenarios} sharedDocumentation={sharedDocumentationFor(scenario, scenarios, evidence)}
     onSave={storage.updateScenario} onAdd={(images) => storage.addEvidence(scenario, images)} onUpdateEvidence={storage.updateEvidence}
     onMoveEvidence={(id, direction) => storage.moveEvidence(scenario, id, direction)} onDeleteEvidence={(id) => storage.deleteEvidence(scenario, id)}
+    onShare={(targetIds, stepId) => storage.shareDocumentation(scenario, targetIds, stepId)}
+    onUnshare={(link) => storage.unshareDocumentation(scenario, link)}
     onBack={goProject} onPrevious={index > 0 ? () => openScenario(scenarios[index - 1].id) : undefined}
     onNext={index < scenarios.length - 1 ? () => openScenario(scenarios[index + 1].id) : undefined} /></main>
 }
