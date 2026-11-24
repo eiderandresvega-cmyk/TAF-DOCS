@@ -18,7 +18,7 @@ El PDF toma de la plantilla Word el formato carta y la estructura de portada, au
 | --- | --- |
 | TypeScript y compilación de producción | Compilación correcta con generación de recursos sin conexión. |
 | Pruebas unitarias | 43 aprobadas. Cubren formatos de Excel, pasos numerados, asignación de capturas, progreso, imágenes, documentación compartida, PDF y respaldos. |
-| Pruebas E2E en Chromium | 9 aprobadas en local. Cubren migración de proyectos, edición de valores por defecto, vínculo de un paso a dos destinos, exportación, restauración, actualización de caché, modo sin conexión e importación de 1.000 escenarios. |
+| Pruebas E2E en Chromium | 9 aprobadas en local y en producción. Cubren migración de proyectos, edición de valores por defecto, vínculo de un paso a dos destinos, exportación, restauración, actualización de caché, modo sin conexión e importación de 1.000 escenarios. |
 | Archivos de referencia en Chromium local | La plantilla estándar importó 15 escenarios con encabezados en la fila 2, fecha de portada y cero advertencias. La plantilla ampliada importó 27 escenarios con encabezados en la fila 5 y cero advertencias. |
 | Excel estándar en Brave local | 15 escenarios, fecha de portada verificada, creación del proyecto y pasos disponibles. Cero advertencias y cero solicitudes con datos del Excel. |
 | PDF sintético | Cinco páginas revisadas visualmente, incluida una captura ancha en página horizontal. |

@@ -14,7 +14,7 @@ El MVP permite importar un test script de Excel o crear un proyecto manual, docu
 
 ### Estado de la versión inicial
 
-- Compilación de producción, 43 pruebas unitarias y 9 pruebas de navegador en local aprobadas. Las plantillas de referencia de 15 y 27 columnas se importaron sin advertencias. La validación de volumen incluyó 10, 27 y 1.000 escenarios sintéticos.
+- Compilación de producción y 43 pruebas unitarias aprobadas. Las 9 pruebas de navegador pasaron en local y en ElCoVeg. Las plantillas de referencia de 15 y 27 columnas se importaron sin advertencias. La validación de volumen incluyó 10, 27 y 1.000 escenarios sintéticos.
 - Recuperación de una versión anterior del Documentador con otra pestaña abierta y conservación del proyecto guardado. [Actualizar TAF Docs](https://elcoveg.com/TAF/Actualizar)
 - Demo personal publicada en Vercel Hobby. El portal reúne los proyectos de TAF y abre el Documentador QA en su ruta propia. [Inicio TAF](https://elcoveg.com/TAF/) · [Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 - Flujo sintético verificado con cero solicitudes que contuvieran el Excel, los datos del proyecto o las capturas. Los resultados y tiempos locales están en el [informe de entrega](ENTREGA.md).
