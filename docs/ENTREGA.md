@@ -18,8 +18,9 @@ El PDF toma de la plantilla Word el formato carta y la estructura de portada, au
 | --- | --- |
 | TypeScript y compilación de producción | Compilación correcta con generación de recursos sin conexión. |
 | Pruebas unitarias | 26 aprobadas. Cubren los dos formatos de Excel, archivos sintéticos de 10, 27 y 1.000 escenarios, progreso, imágenes, PDF y respaldos. |
-| Pruebas E2E en Chromium | 6 aprobadas en la compilación local. Cubren importación y guardado de 1.000 escenarios del formato estándar, el portal, enlaces previos, arrastre de Excel, capturas, persistencia, PDF, respaldo, modo sin conexión y entradas inválidas. |
+| Pruebas E2E en Chromium | 7 aprobadas en la compilación local. Cubren la actualización desde una caché anterior con otra pestaña abierta, importación y guardado de 1.000 escenarios del formato estándar, portal, capturas, persistencia, PDF, respaldo y modo sin conexión. |
 | Archivos de referencia en Chromium local | La plantilla estándar importó 15 escenarios con encabezados en la fila 2, fecha de portada y cero advertencias. La plantilla ampliada importó 27 escenarios con encabezados en la fila 5 y cero advertencias. |
+| Excel estándar en Brave local | 15 escenarios, fecha de portada verificada, creación del proyecto y pasos disponibles. Cero advertencias y cero solicitudes con datos del Excel. |
 | PDF sintético | Cinco páginas revisadas visualmente, incluida una captura ancha en página horizontal. |
 | Dependencias | `npm audit` reportó 0 vulnerabilidades conocidas. |
 | Seguridad funcional | Se verificaron el rechazo de archivos inválidos y respaldos alterados, el tratamiento de HTML introducido como texto y la política CSP. Las pruebas observaron cero solicitudes con el contenido del proyecto y cero solicitudes a otros orígenes. |

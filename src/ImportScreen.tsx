@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, LoaderCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, RefreshCw } from 'lucide-react'
 import { type ImportResult } from './excel'
 import type { ProjectDetails } from './model'
 import { createProject, storageMessage } from './storage'
 import { DetailsFields, FileDrop } from './ui'
+import { TAF_UPDATE } from './site-paths'
 
 export function ImportScreen({ goHome, openProject }: { goHome: () => void; openProject: (id: string) => void }) {
   const [result, setResult] = useState<ImportResult>()
@@ -56,6 +57,6 @@ export function ImportScreen({ goHome, openProject }: { goHome: () => void; open
         <div className="actions modal-actions"><button type="button" className="button secondary" disabled={creating} onClick={() => { setResult(undefined); setError('') }}>Elegir otro archivo</button><button className="button primary" disabled={creating}>{creating ? 'Creando…' : 'Crear proyecto'}</button></div>
       </form> : <><FileDrop accept=".xlsx" label="Arrastra tu archivo Excel aquí" onFile={select} /><div className="import-foot"><span className="muted">Formato XLSX · Procesamiento local</span><button className="text-button" onClick={async () => {
         try { await (await import('./excel')).downloadTemplate() } catch (failure) { setError(storageMessage(failure)) }
-      }}><Download size={16} /> Descargar plantilla Excel</button></div></>}
+      }}><Download size={16} /> Descargar plantilla Excel</button><a className="text-button" href={TAF_UPDATE}><RefreshCw size={16} /> Actualizar aplicación</a></div></>}
   </main>
 }

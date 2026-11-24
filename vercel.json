@@ -12,7 +12,8 @@
   ],
   "rewrites": [
     { "source": "/TAF/", "destination": "/portal.html" },
-    { "source": "/TAF/Documentador-QA", "destination": "/index.html" }
+    { "source": "/TAF/Documentador-QA", "destination": "/index.html" },
+    { "source": "/TAF/Actualizar", "destination": "/actualizar.html" }
   ],
   "headers": [
     {
@@ -25,6 +26,9 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" }
       ]
     },
+    { "source": "/TAF/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/TAF/Documentador-QA", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/TAF/Actualizar", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
   ]

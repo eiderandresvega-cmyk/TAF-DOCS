@@ -41,6 +41,8 @@ Consulta [PRIVACY.md](PRIVACY.md) para conocer el tratamiento de los datos y [SE
 
 El dominio ElCoVeg redirige temporalmente `/` a `/TAF/`. La Home se genera desde `portal.html` y su catálogo se amplía en `src/portal/TafHome.tsx`. El Documentador se sirve en `/TAF/Documentador-QA`. Para mover proyectos guardados en el [dominio anterior](https://taf-docs.vercel.app/), exporta un `.tafproject` allí e impórtalo en ElCoVeg.
 
+La navegación consulta la versión publicada cuando hay conexión y usa la copia local al trabajar sin red. Si una instalación anterior sigue mostrando una versión desactualizada, usa [Actualizar TAF Docs](https://elcoveg.com/TAF/Actualizar) para activar la versión publicada y conservar los proyectos del navegador.
+
 ## Licencia
 
 MIT. Consulta [LICENSE](LICENSE).

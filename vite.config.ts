@@ -29,6 +29,7 @@ export default defineConfig({
   build: { rolldownOptions: { input: [
     fileURLToPath(new URL('./index.html', import.meta.url)),
     fileURLToPath(new URL('./portal.html', import.meta.url)),
+    fileURLToPath(new URL('./actualizar.html', import.meta.url)),
   ] } },
   preview: { headers: Object.fromEntries(vercel.headers[0].headers.map(({ key, value }) => [key, value])) },
 })
