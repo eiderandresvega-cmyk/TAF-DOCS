@@ -18,7 +18,7 @@ El PDF toma de la plantilla Word el formato carta y la estructura de portada, au
 | --- | --- |
 | TypeScript y compilación de producción | Compilación correcta con generación de recursos sin conexión. |
 | Pruebas unitarias | 20 aprobadas en 4 archivos. Cubren progreso, encabezados Excel, validación de imágenes, PDF y respaldos. |
-| Pruebas E2E en Chromium | 5 aprobadas en la compilación local. Cubren la redirección y el portal, enlaces previos, arrastre de Excel, pegado de captura, persistencia, PDF, respaldo, modo sin conexión y manejo de entrada inválida. |
+| Pruebas E2E en Chromium | 5 aprobadas en la compilación local y 5 en `elcoveg.com`. Cubren la redirección y el portal, enlaces previos, arrastre de Excel, pegado de captura, persistencia, PDF, respaldo, modo sin conexión y manejo de entrada inválida. |
 | Excel de referencia en Chromium local | 27 escenarios y 27 columnas, encabezados en fila 5 y cero advertencias. |
 | PDF sintético | Cinco páginas revisadas visualmente, incluida una captura ancha en página horizontal. |
 | Dependencias | `npm audit` reportó 0 vulnerabilidades conocidas. |
