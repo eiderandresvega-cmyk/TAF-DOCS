@@ -41,6 +41,8 @@ input::placeholder, textarea::placeholder { color: #8394a4; }
 .topbar { border-bottom: 1px solid #1c2a35; background: #0b1118; }
 .top-inner { display: flex; align-items: center; justify-content: space-between; min-height: 66px; gap: 15px; }
 .brand { display: flex; align-items: center; gap: .65rem; color: var(--ink); font-size: 1.2rem; font-weight: 800; letter-spacing: -.03em; white-space: nowrap; }
+.brand[href] { text-decoration: none; }
+.brand[href]:hover { color: var(--accent); }
 .brand-sub { color: #a4b1bc; font-weight: 550; }
 .brand-mark { display: grid; place-items: center; width: 32px; height: 32px; color: #08211f; background: var(--accent); border-radius: 9px; }
 .top-status { display: flex; gap: .6rem; align-items: center; }

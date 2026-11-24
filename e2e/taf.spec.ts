@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { QA_DOCUMENTADOR } from '../src/site-paths'
 
 const sampleCapture = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAMklEQVR4nIXCMREAIAADscpBBCKYOyMCES8CEQhEwueSUXRm0VlFZxedU3QoOrfovKI//vV/gVdu7CQAAAAASUVORK5CYII=', 'base64')
 
@@ -13,7 +14,7 @@ test('Excel por arrastre, captura pegada, autosave, PDF, respaldo y recuperació
       uploads.push(`${request.method()} ${request.url()}`)
     }
   })
-  await page.goto('/')
+  await page.goto(QA_DOCUMENTADOR)
   await expect(page.getByRole('heading', { name: 'Documenta tus pruebas QA.' })).toBeVisible()
   const sheetDownload = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Plantilla Excel' }).click()
@@ -77,7 +78,7 @@ test('Excel por arrastre, captura pegada, autosave, PDF, respaldo y recuperació
 
 test('proyecto manual, escenario y filtros por teclado con pantalla estrecha', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto(QA_DOCUMENTADOR)
   await page.getByRole('button', { name: 'Iniciar de cero' }).press('Enter')
   await page.getByLabel('Nombre del proyecto').fill('Proyecto manual')
   await page.getByLabel('QA responsable').fill('QA Demo')
@@ -98,7 +99,7 @@ test('proyecto manual, escenario y filtros por teclado con pantalla estrecha', a
 })
 
 test('archivos inválidos y texto interpretado como texto bajo CSP', async ({ page }) => {
-  const documentResponse = await page.goto('/')
+  const documentResponse = await page.goto(QA_DOCUMENTADOR)
   expect(documentResponse?.headers()['content-security-policy']).toContain("object-src 'none'")
   await page.getByRole('button', { name: 'Con Test Scripts' }).click()
   await page.locator('input[accept=".xlsx"]').setInputFiles({ name: 'archivo.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('archivo sin contenedor') })

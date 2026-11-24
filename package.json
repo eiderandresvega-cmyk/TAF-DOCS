@@ -7,7 +7,7 @@
     "build": "tsc --noEmit && vite build && node scripts/pwa.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --exclude e2e/**",
+    "test": "vitest run --exclude 'e2e/**'",
     "test:e2e": "playwright test",
     "test:performance": "node scripts/performance.mjs"
   },

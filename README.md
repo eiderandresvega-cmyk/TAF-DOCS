@@ -2,7 +2,7 @@
 
 Aplicación para documentar pruebas QA desde el navegador. Importa un test script de Excel, registra el resultado de cada escenario, agrega capturas y genera un informe PDF. También permite empezar un proyecto manual o usar un proyecto sintético de ejemplo.
 
-[Abrir demo personal](https://taf-docs.vercel.app/)
+[Inicio TAF](https://elcoveg.com/TAF/) · [Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 
 ## Ejecutar y verificar
 
@@ -36,6 +36,8 @@ Consulta [PRIVACY.md](PRIVACY.md) para conocer el tratamiento de los datos y [SE
 ## Despliegue
 
 `vercel.json` define el sitio estático Vite y sus cabeceras de seguridad. No requiere variables de entorno. Para la demostración personal no comercial, usa un proyecto de Vercel Hobby con el dominio `*.vercel.app` y datos sintéticos. Para empezar un piloto corporativo en Vercel, migra a Pro. [Vercel Hobby](https://vercel.com/docs/plans/hobby)
+
+El dominio ElCoVeg redirige temporalmente `/` a `/TAF/`. La Home se genera desde `portal.html` y su catálogo se amplía en `src/portal/TafHome.tsx`. El Documentador se sirve en `/TAF/Documentador-QA`. Para mover proyectos guardados en el [dominio anterior](https://taf-docs.vercel.app/), exporta un `.tafproject` allí e impórtalo en ElCoVeg.
 
 ## Licencia
 

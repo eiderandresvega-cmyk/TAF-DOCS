@@ -1,0 +1,132 @@
+.taf-portal {
+  min-height: 100dvh;
+}
+
+.taf-portal-header {
+  border-bottom: 1px solid #1c2a35;
+  background: #0b1118;
+}
+
+.taf-portal-brand {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 66px;
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+
+.taf-portal-main {
+  padding-block: clamp(1.5rem, 5vw, 3.75rem) 4rem;
+}
+
+.taf-portal-intro {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1.5rem, 5vw, 3.75rem);
+  border: 1px solid #28464e;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 89% 27%, #19403b 0%, transparent 54%), linear-gradient(115deg, #111c27, #10282c);
+}
+
+.taf-portal-intro::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: radial-gradient(circle, #73e9d94a 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(112deg, transparent 42%, #000 100%);
+  content: '';
+}
+
+.taf-portal-intro h1 {
+  color: var(--ink);
+  font-size: clamp(2.65rem, 6vw, 4.5rem);
+  font-weight: 780;
+  line-height: 1;
+  letter-spacing: -.065em;
+}
+
+.taf-portal-intro p {
+  margin-top: .9rem;
+  color: #b5cbd0;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+}
+
+.taf-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taf-project {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 100%;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.taf-project:hover {
+  border-color: #478d89;
+  background: #12222d;
+}
+
+.taf-project-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #2c5351;
+  border-radius: 12px;
+  background: #173335;
+  color: var(--accent);
+}
+
+.taf-project-category {
+  margin-bottom: .35rem;
+  color: #a9bbc5;
+  font-size: .875rem;
+  font-weight: 570;
+}
+
+.taf-project h2 {
+  margin-bottom: .6rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -.035em;
+}
+
+.taf-project p {
+  flex: 1;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.taf-project-action {
+  margin-top: 1.4rem;
+  border: 1px solid #34726b;
+  border-radius: 8px;
+  background: #173335;
+  color: #a6f4e9;
+  padding: .52rem .72rem;
+  font-size: .875rem;
+  font-weight: 670;
+}
+
+.taf-project:hover .taf-project-action {
+  background: #21463f;
+}

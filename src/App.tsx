@@ -8,6 +8,7 @@ import { demoDetails, demoScenarios } from './demo'
 import { emptyDetails, type Project, type ProjectBundle } from './model'
 import * as storage from './storage'
 import { BrandMark, DetailsFields, FileDrop, LocalBadge, Modal, ReportPreview } from './ui'
+import { TAF_HOME } from './site-paths'
 
 function subscribeRoute(update: () => void) {
   window.addEventListener('hashchange', update)
@@ -132,8 +133,12 @@ export default function App() {
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update) }
   }, [])
   useEffect(() => { window.scrollTo(0, 0) }, [route])
+  const brand = <><BrandMark /><span>TAF<span className="brand-sub"> Docs</span></span></>
   return <>
-    <header className="topbar"><div className="shell top-inner"><div className="brand"><BrandMark /><span>TAF<span className="brand-sub"> Docs</span></span></div><div className="top-status">{offline && <span className="offline-badge" role="status">Sin conexión</span>}<LocalBadge /></div></div></header>
+    <header className="topbar"><div className="shell top-inner">
+      {match?.[2] ? <div className="brand">{brand}</div> : <a className="brand" href={TAF_HOME} aria-label="Inicio TAF">{brand}</a>}
+      <div className="top-status">{offline && <span className="offline-badge" role="status">Sin conexión</span>}<LocalBadge /></div>
+    </div></header>
     {match ? <ProjectScreen key={match[1]} projectId={match[1]} scenarioId={match[2]} /> : route === '/import' ? <ImportScreen goHome={() => navigate('/')} openProject={openProject} /> : <Home openProject={openProject} />}
     <footer className="footer"><div className="shell"><span>TAF Docs</span><span><ShieldCheck size={15} /> Procesamiento local de archivos</span></div></footer>
   </>

@@ -2,11 +2,12 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import { platform, arch, cpus } from 'node:os'
+import { QA_DOCUMENTADOR } from '../src/site-paths.ts'
 
 import { chromium } from '@playwright/test'
 import * as XLSX from 'xlsx'
 
-const destination = new URL(process.argv[2] ?? 'http://127.0.0.1:4173/')
+const destination = new URL(process.argv[2] ?? QA_DOCUMENTADOR, 'http://127.0.0.1:4173/')
 const scenarioCount = Number(process.argv[3] ?? 1000)
 const trials = Number(process.argv[4] ?? 3)
 

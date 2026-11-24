@@ -1,6 +1,6 @@
 # Entrega del MVP de TAF Docs
 
-El 24 de noviembre de 2026 se publicó la demo personal de TAF Docs en Vercel Hobby. [Abrir la demo](https://taf-docs.vercel.app/)
+El 24 de noviembre de 2026 se publicó la demo personal de TAF Docs en Vercel Hobby. [Abrir el Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 
 ## Alcance funcional
 
@@ -18,7 +18,7 @@ El PDF toma de la plantilla Word el formato carta y la estructura de portada, au
 | --- | --- |
 | TypeScript y compilación de producción | Compilación correcta con generación de recursos sin conexión. |
 | Pruebas unitarias | 20 aprobadas en 4 archivos. Cubren progreso, encabezados Excel, validación de imágenes, PDF y respaldos. |
-| Pruebas E2E en Chromium | 3 aprobadas en la compilación local y 3 en Vercel. Incluyen arrastre de Excel, pegado de captura, persistencia tras recarga, PDF, respaldo, recuperación sin red, navegación por teclado y manejo de entrada inválida. |
+| Pruebas E2E en Chromium | 5 aprobadas en la compilación local. Cubren la redirección y el portal, enlaces previos, arrastre de Excel, pegado de captura, persistencia, PDF, respaldo, modo sin conexión y manejo de entrada inválida. |
 | Excel de referencia en Chromium local | 27 escenarios y 27 columnas, encabezados en fila 5 y cero advertencias. |
 | PDF sintético | Cinco páginas revisadas visualmente, incluida una captura ancha en página horizontal. |
 | Dependencias | `npm audit` reportó 0 vulnerabilidades conocidas. |
@@ -60,9 +60,9 @@ npm run test:e2e
 npm audit
 ```
 
-Para probar el Excel de referencia en local, ejecuta `npm run preview`, abre la dirección mostrada y carga el archivo desde el navegador. Usa la compilación de producción para verificar el modo sin conexión.
+Para probar el Excel de referencia en local, ejecuta `npm run preview`, abre la dirección mostrada, selecciona **Documentador QA** y carga el archivo desde el navegador. Usa la compilación de producción para verificar el modo sin conexión.
 
-Para repetir la medición sintética, deja `npm run preview` en ejecución y usa `npm run test:performance -- http://127.0.0.1:4173/ 1000 3` desde otra terminal. El comando devuelve los tiempos, cabeceras y solicitudes observadas en JSON.
+Para repetir la medición sintética, deja `npm run preview` en ejecución y usa `npm run test:performance -- http://127.0.0.1:4173/TAF/Documentador-QA 1000 3` desde otra terminal. El comando devuelve los tiempos, cabeceras y solicitudes observadas en JSON.
 
 ## Límites conocidos
 

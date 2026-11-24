@@ -4,6 +4,16 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/", "destination": "/TAF/", "permanent": false, "has": [{ "type": "host", "value": "elcoveg.com" }] },
+    { "source": "/", "destination": "/TAF/", "permanent": false, "has": [{ "type": "host", "value": "www.elcoveg.com" }] },
+    { "source": "/TAF", "destination": "/TAF/", "permanent": false },
+    { "source": "/TAF/Documentador-QA/", "destination": "/TAF/Documentador-QA", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/TAF/", "destination": "/portal.html" },
+    { "source": "/TAF/Documentador-QA", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
