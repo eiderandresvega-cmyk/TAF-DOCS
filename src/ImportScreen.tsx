@@ -50,7 +50,7 @@ export function ImportScreen({ goHome, openProject }: { goHome: () => void; open
     {working ? <div className="surface validating" role="status"><LoaderCircle className="spin" size={30} /><h2>Validando Excel</h2><p className="muted">{name}</p><button className="button secondary" onClick={() => { controller.current?.abort(); controller.current = null; setWorking(false) }}>Cancelar</button></div> : result && details ?
       <form className="surface panel import-result" onSubmit={submit}>
         <div className="result-title"><CheckCircle2 size={25} /><div><h2>Test Script listo</h2><p className="muted">{name}</p></div></div>
-        <div className="import-counts"><span><b>{result.scenarios.length}</b> escenarios</span><span><b>27</b> columnas válidas</span><span><b>{result.headerRow}</b> fila de encabezados</span></div>
+        <div className="import-counts"><span><b>{result.scenarios.length}</b> escenarios</span><span><b>{result.columnCount}</b> columnas válidas</span><span><b>{result.headerRow}</b> fila de encabezados</span></div>
         {result.warnings.length > 0 && <details className="message notice" open><summary>{result.warnings.length} advertencias de importación</summary><ul>{result.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></details>}
         <DetailsFields details={details} onChange={setDetails} />
         <div className="actions modal-actions"><button type="button" className="button secondary" disabled={creating} onClick={() => { setResult(undefined); setError('') }}>Elegir otro archivo</button><button className="button primary" disabled={creating}>{creating ? 'Creando…' : 'Crear proyecto'}</button></div>

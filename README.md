@@ -2,6 +2,8 @@
 
 Aplicación para documentar pruebas QA desde el navegador. Importa un test script de Excel, registra el resultado de cada escenario, agrega capturas y genera un informe PDF. También permite empezar un proyecto manual o usar un proyecto sintético de ejemplo.
 
+El importador admite la plantilla estándar de 15 columnas y la plantilla ampliada de 27. En la estándar, la primera línea de **Objetivo** se usa como título cuando el archivo no incluye la columna **Escenario**.
+
 [Inicio TAF](https://elcoveg.com/TAF/) · [Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 
 ## Ejecutar y verificar

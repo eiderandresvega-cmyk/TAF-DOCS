@@ -6,7 +6,7 @@ El MVP permite importar un test script de Excel o crear un proyecto manual, docu
 
 | Flujo | Alcance de la versión inicial |
 | --- | --- |
-| Importación | Validación del archivo `.xlsx`, detección de encabezados, mapeo de portada y revisión de advertencias antes de crear el proyecto. |
+| Importación | Validación `.xlsx` en formatos de 15 y 27 columnas, detección de encabezados, mapeo de portada y revisión de advertencias antes de crear el proyecto. |
 | Ejecución | Tablero con búsqueda, filtros y progreso de ejecución y documentación. Editor de resultados, pasos y comentarios con guardado en el navegador. |
 | Evidencias | Capturas desde el portapapeles, por arrastre o desde el selector de archivos. Miniaturas, descripciones, orden y asociación a pasos. |
 | Entrega | Informe PDF con datos generales, autorización, índice, resultados, evidencias y escenarios pendientes. Respaldo `.tafproject` para recuperar una copia completa. |
@@ -14,7 +14,7 @@ El MVP permite importar un test script de Excel o crear un proyecto manual, docu
 
 ### Estado de la versión inicial
 
-- Compilación de producción y 20 pruebas unitarias aprobadas. Las 5 pruebas de navegador pasaron en local y en el dominio ElCoVeg. El Excel de referencia validó 27 columnas y 27 escenarios en local.
+- Compilación de producción, 26 pruebas unitarias y 6 pruebas de navegador aprobadas en local. Las plantillas de referencia de 15 y 27 columnas se importaron sin advertencias. La validación de volumen incluyó 10, 27 y 1.000 escenarios sintéticos.
 - Demo personal publicada en Vercel Hobby. El portal reúne los proyectos de TAF y abre el Documentador QA en su ruta propia. [Inicio TAF](https://elcoveg.com/TAF/) · [Documentador QA](https://elcoveg.com/TAF/Documentador-QA)
 - Flujo sintético verificado con cero solicitudes que contuvieran el Excel, los datos del proyecto o las capturas. Los resultados y tiempos locales están en el [informe de entrega](ENTREGA.md).
 - Pendiente de aceptación funcional por QA y presentación al director de automatizaciones.

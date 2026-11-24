@@ -1,6 +1,6 @@
 import type { ProjectDetails, ScenarioDraft } from '../model'
 
-export type ImportResult = { details: ProjectDetails; scenarios: ScenarioDraft[]; warnings: string[]; headerRow: number }
+export type ImportResult = { details: ProjectDetails; scenarios: ScenarioDraft[]; warnings: string[]; headerRow: number; columnCount: number }
 const limit = 16 * 1024 * 1024
 
 export async function parseExcel(file: File, signal?: AbortSignal): Promise<ImportResult> {
