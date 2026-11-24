@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vercel/
+.env*
+playwright-report/
+test-results/
+.DS_Store
+*.tafproject
+*.xlsx
+*.xlsm
+*.docx
+*.pem
+.vercel

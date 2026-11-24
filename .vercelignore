@@ -1,0 +1,9 @@
+e2e/
+playwright-report/
+test-results/
+*.tafproject
+.env*
+*.xlsx
+*.xlsm
+*.docx
+*.pem
